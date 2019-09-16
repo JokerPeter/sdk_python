@@ -12,6 +12,8 @@ from Cryptodome.Hash import SHA256
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Signature import PKCS1_v1_5
 
+# TODO: Rename this class to security_utils to match the corresponding class in the other SDKs.
+
 # Size of private RSA key to generate
 _RSA_KEY_SIZE = 2048
 
@@ -301,3 +303,13 @@ def _should_sign_response_header(header_name):
         return True
 
     return False
+
+
+def get_certificate_from_file(file_test_certificate):
+    # TODO: Implement.
+    return None
+
+
+def get_private_key_from_file(file_test_private_key):
+    # TODO: Implement.
+    return None

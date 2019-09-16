@@ -321,3 +321,16 @@ class ApiContext(object):
         return (self.token == other.token and
                 self.api_key == other.api_key and
                 self.environment_type == other.environment_type)
+
+    @classmethod
+    def create_for_psd2(cls,
+                        environment_type,
+                        certificate,
+                        private_key,
+                        all_chain_certificate,
+                        description,
+                        all_permitted_ip):
+
+        # TODO: Implement this class method.
+        return None
+
