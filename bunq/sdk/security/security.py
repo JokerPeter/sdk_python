@@ -1,5 +1,8 @@
+# TODO: Rename this class to security_utils to match the corresponding class in the other SDKs.
+
 import base64
 import hmac
+import os
 import re
 from base64 import b64encode
 from hashlib import sha1
@@ -12,7 +15,8 @@ from Cryptodome.Hash import SHA256
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Signature import PKCS1_v1_5
 
-# TODO: Rename this class to security_utils to match the corresponding class in the other SDKs.
+from bunq.sdk.exception.bunq_exception import BunqException
+from bunq.sdk.model.generated import object_
 
 # Size of private RSA key to generate
 _RSA_KEY_SIZE = 2048
@@ -46,6 +50,13 @@ _HEADER_CLIENT_ENCRYPTION_KEY = 'X-Bunq-Client-Encryption-Key'
 _HEADER_CLIENT_ENCRYPTION_IV = 'X-Bunq-Client-Encryption-Iv'
 _HEADER_CLIENT_ENCRYPTION_HMAC = 'X-Bunq-Client-Encryption-Hmac'
 _HEADER_SERVER_SIGNATURE = 'X-Bunq-Server-Signature'
+
+# File mode for saving and restoring the context
+_FILE_MODE_WRITE = 'w'
+_FILE_MODE_READ = 'r'
+
+# Error constants
+_ERROR_COULD_NOT_READ_FROM_FILE = 'Could not read from file %s.'
 
 
 def generate_rsa_private_key():
@@ -305,11 +316,44 @@ def _should_sign_response_header(header_name):
     return False
 
 
-def get_certificate_from_file(file_test_certificate):
-    # TODO: Implement.
-    return None
+def get_certificate_chain_string(all_chain_certificate):
+    chain_string = ''
+    for certificate in all_chain_certificate:
+        chain_string += certificate.certificate
+        chain_string += _DELIMITER_NEWLINE
+
+    return chain_string
 
 
-def get_private_key_from_file(file_test_private_key):
-    # TODO: Implement.
-    return None
+def get_certificate_from_file(path):
+    if os.path.exists(path):
+
+        with open(path, _FILE_MODE_READ) as file_:
+            key_string = file_.read()
+            return object_.Certificate(key_string)
+    else:
+        raise FileNotFoundError()
+
+
+def get_private_key_from_file(path):
+    try:
+        with open(path, _FILE_MODE_READ) as file_:
+            key_string = file_.read()
+            rsa_key = rsa_key_from_string(key_string)
+
+            return private_key_to_string(rsa_key)
+
+    except FileNotFoundError:
+        pass
+
+    raise BunqException(_ERROR_COULD_NOT_READ_FROM_FILE.format(path))
+
+
+def generate_signature(string_to_sign, private_key):
+    raw_bytes = bytes(string_to_sign)
+
+    return sign_base_64(raw_bytes, private_key)
+
+
+def sign_base_64(raw_bytes, private_key):
+    return PKCS1_v1_5.new(private_key).sign(raw_bytes)

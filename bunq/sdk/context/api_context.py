@@ -7,6 +7,7 @@ from bunq.sdk.context.installation_context import InstallationContext
 from bunq.sdk.context.session_context import SessionContext
 from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.json import converter
+from bunq.sdk.model.core.payment_service_provider_credential_internal import PaymentServiceProviderCredentialInternal
 from bunq.sdk.model.generated import endpoint
 from bunq.sdk.security import security
 
@@ -33,8 +34,12 @@ class ApiContext(object):
     # Default path to the file storing serialized API context
     _PATH_API_CONTEXT_DEFAULT = 'bunq.conf'
 
-    def __init__(self, environment_type, api_key, device_description,
-                 permitted_ips=None, proxy_url=None):
+    def __init__(self,
+                 environment_type,
+                 api_key,
+                 device_description,
+                 permitted_ips=None,
+                 proxy_url=None):
         """
         :type environment_type: ApiEnvironmentType
         :type api_key: str
@@ -52,6 +57,33 @@ class ApiContext(object):
         self._session_context = None
         self._proxy_url = proxy_url
         self._initialize(device_description, permitted_ips)
+
+    @classmethod
+    def create_for_psd2(cls,
+                        environment_type,
+                        certificate,
+                        private_key,
+                        all_chain_certificate,
+                        description,
+                        all_permitted_ip=None):
+
+        if all_permitted_ip is None:
+            all_permitted_ip = []
+
+        cls._environment_type = environment_type
+        cls._installation_context = None
+        cls._session_context = None
+
+        cls._initialize_installation()
+
+        service_provider_credential = cls._initialize_psd2_credential(certificate, private_key, all_chain_certificate)
+
+        cls._api_key = service_provider_credential.token_value
+
+        cls._register_device(description, all_permitted_ip)
+        cls._initialize_session()
+
+        return cls
 
     def _initialize(self, device_description, permitted_ips):
         """
@@ -86,6 +118,21 @@ class ApiContext(object):
             private_key_client,
             public_key_server
         )
+
+    def _initialize_psd2_credential(self, certificate, private_key, all_chain_certificate):
+        session_token = self.installation_context.token
+        client_key_pair = self.installation_context.private_key_client
+
+        string_to_sign = security.public_key_to_string(client_key_pair.publickey()) + session_token
+        encoded_signature = security.generate_signature(string_to_sign, private_key)
+
+        payment_provider_response = PaymentServiceProviderCredentialInternal.create_with_api_context(
+            certificate.certificate,
+            security.get_certificate_chain_string(all_chain_certificate),
+            encoded_signature,
+            self)
+
+        return payment_provider_response
 
     def _register_device(self, device_description,
                          permitted_ips):
@@ -321,16 +368,3 @@ class ApiContext(object):
         return (self.token == other.token and
                 self.api_key == other.api_key and
                 self.environment_type == other.environment_type)
-
-    @classmethod
-    def create_for_psd2(cls,
-                        environment_type,
-                        certificate,
-                        private_key,
-                        all_chain_certificate,
-                        description,
-                        all_permitted_ip):
-
-        # TODO: Implement this class method.
-        return None
-
