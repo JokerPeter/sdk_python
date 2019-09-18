@@ -17,6 +17,7 @@ class UserContext(object):
         self._user_person = None
         self._user_company = None
         self._user_api_key = None
+        self._user_payment_service_provider = None
         self._primary_monetary_account = None
 
         self._set_user(self.__get_user_object())
@@ -38,6 +39,9 @@ class UserContext(object):
 
         elif isinstance(user, endpoint.UserApiKey):
             self._user_api_key = user
+
+        elif isinstance(user, endpoint.UserPaymentServiceProvider):
+            self._user_payment_service_provider = user
 
         else:
             raise BunqException(
@@ -65,7 +69,8 @@ class UserContext(object):
 
         return self._user_person is not None \
             and self._user_company is None \
-            and self._user_api_key is None
+            and self._user_api_key is None \
+            and self._user_payment_service_provider is None
 
     def is_only_user_company_set(self):
         """
@@ -74,7 +79,8 @@ class UserContext(object):
 
         return self._user_company is not None \
             and self._user_person is None \
-            and self._user_api_key is None
+            and self._user_api_key is None \
+            and self._user_payment_service_provider is None
 
     def is_only_user_api_key_set(self):
         """
@@ -83,7 +89,18 @@ class UserContext(object):
 
         return self._user_api_key is not None \
             and self._user_company is None \
-            and self._user_person is None
+            and self._user_person is None \
+            and self._user_payment_service_provider is None
+
+    def is_only_user_payment_service_provider_set(self):
+        """
+        :rtype: bool
+        """
+
+        return self._user_payment_service_provider is not None \
+            and self._user_person is None \
+            and self._user_company is None \
+            and self._user_api_key is None
 
     def is_all_user_type_set(self):
         """
@@ -99,6 +116,10 @@ class UserContext(object):
         """
 
         self._set_user(self.__get_user_object())
+
+        if self.user_payment_service_provider is not None:
+            return
+
         self.init_main_monetary_account()
 
     @property
@@ -124,6 +145,14 @@ class UserContext(object):
         """
 
         return self._user_api_key
+
+    @property
+    def user_payment_service_provider(self):
+        """
+        :rtype: endpoint.UserPaymentServiceProvider
+        """
+
+        return self._user_payment_service_provider
 
     @property
     def primary_monetary_account(self):

@@ -205,6 +205,8 @@ class ApiContext(object):
                 .requested_by_user \
                 .get_referenced_object() \
                 .session_timeout
+        elif session_server.user_payment_service_provider is not None:
+            return session_server.user_payment_service_provider.session_timeout
         else:
             raise BunqException()
 

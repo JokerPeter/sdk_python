@@ -4,13 +4,13 @@ import urllib.parse as urlparse
 from bunq import Pagination, AnchoredObjectInterface
 from bunq.sdk.context import api_context
 from bunq.sdk.exception.bunq_exception import BunqException
+from bunq.sdk.json import converter
 from bunq.sdk.model.core.id import Id
 from bunq.sdk.model.core.public_key_server import PublicKeyServer
 from bunq.sdk.model.core.session_token import SessionToken
-from bunq.sdk.security import security
-from bunq.sdk.json import converter
 from bunq.sdk.model.generated import endpoint
 from bunq.sdk.model.generated import object_
+from bunq.sdk.security import security
 
 
 class AnchoredObjectModelAdapter(converter.JsonAdapter):
@@ -170,6 +170,10 @@ class SessionServerAdapter(converter.JsonAdapter):
     _ATTRIBUTE_USER_API_KEY = '_user_api_key'
     _FIELD_USER_API_KEY = 'UserApiKey'
 
+    # UserPaymentServiceProvider constants
+    _ATTRIBUTE_USER_PAYMENT_SERVER_PROVIDER = '_user_payment_service_provider'
+    _FIELD_USER_PAYMENT_SERVER_PROVIDER = 'UserPaymentServiceProvider'
+
     @classmethod
     def deserialize(cls, target_class, array):
         """
@@ -191,6 +195,8 @@ class SessionServerAdapter(converter.JsonAdapter):
             ),
             cls._ATTRIBUTE_USER_COMPANY: None,
             cls._ATTRIBUTE_USER_PERSON: None,
+            cls._ATTRIBUTE_USER_API_KEY: None,
+            cls._ATTRIBUTE_USER_PAYMENT_SERVER_PROVIDER: None,
         }
 
         user_dict_wrapped = array[cls._INDEX_USER]
@@ -212,6 +218,12 @@ class SessionServerAdapter(converter.JsonAdapter):
             converter.deserialize(
                 endpoint.UserApiKey,
                 user_dict_wrapped[cls._FIELD_USER_API_KEY]
+            )
+        elif cls._FIELD_USER_PAYMENT_SERVER_PROVIDER in user_dict_wrapped:
+            session_server.__dict__[cls._ATTRIBUTE_USER_PAYMENT_SERVER_PROVIDER] = \
+            converter.deserialize(
+                endpoint.UserPaymentServiceProvider,
+                user_dict_wrapped[cls._FIELD_USER_PAYMENT_SERVER_PROVIDER]
             )
         else:
             raise BunqException(cls._ERROR_COULD_NOT_DETERMINE_USER)
@@ -240,6 +252,10 @@ class SessionServerAdapter(converter.JsonAdapter):
             {
                 cls._FIELD_USER_API_KEY:
                     converter.serialize(session_server.user_api_key),
+            },
+            {
+                cls._FIELD_USER_PAYMENT_SERVER_PROVIDER:
+                    converter.serialize(session_server.user_payment_service_provider),
             },
         ]
 
