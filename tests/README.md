@@ -47,8 +47,12 @@ Note:
     5. Copy the Cash Register's ID to the `config.json`
 
 ## Execution
+First, generate a private key and certificate (be sure to add either AISP or PISP to the `Common Name` when prompted):
+```
+openssl req -newkey rsa:2048 -keyout tests/assets/key.pem -out tests/assets/certificate.pem -x509 -nodes -days 365
+```
 
-You can run the tests via command line: 
+You can then run the tests via command line: 
 
 ```
 python -m unittest discover -s tests/model/generated
