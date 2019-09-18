@@ -52,7 +52,6 @@ _HEADER_CLIENT_ENCRYPTION_HMAC = 'X-Bunq-Client-Encryption-Hmac'
 _HEADER_SERVER_SIGNATURE = 'X-Bunq-Server-Signature'
 
 # File mode for saving and restoring the context
-_FILE_MODE_WRITE = 'w'
 _FILE_MODE_READ = 'r'
 
 # Error constants
@@ -319,7 +318,7 @@ def _should_sign_response_header(header_name):
 def get_certificate_chain_string(all_chain_certificate):
     chain_string = ''
     for certificate in all_chain_certificate:
-        chain_string += certificate.certificate
+        chain_string += certificate._certificate_field_for_request
         chain_string += _DELIMITER_NEWLINE
 
     return chain_string
@@ -341,7 +340,7 @@ def get_private_key_from_file(path):
             key_string = file_.read()
             rsa_key = rsa_key_from_string(key_string)
 
-            return private_key_to_string(rsa_key)
+            return rsa_key
 
     except FileNotFoundError:
         pass
@@ -350,10 +349,11 @@ def get_private_key_from_file(path):
 
 
 def generate_signature(string_to_sign, private_key):
-    raw_bytes = bytes(string_to_sign)
+    digest = SHA256.new()
+    digest.update(string_to_sign.encode("utf-8"))
 
-    return sign_base_64(raw_bytes, private_key)
+    return sign_base_64(digest, private_key)
 
 
 def sign_base_64(raw_bytes, private_key):
-    return PKCS1_v1_5.new(private_key).sign(raw_bytes)
+    return b64encode(PKCS1_v1_5.new(private_key).sign(raw_bytes))

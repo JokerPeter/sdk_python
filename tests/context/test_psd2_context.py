@@ -4,7 +4,6 @@ from bunq.sdk.context.api_context import ApiContext
 from bunq.sdk.context.api_environment_type import ApiEnvironmentType
 from bunq.sdk.context.bunq_context import BunqContext
 from bunq.sdk.model.generated import endpoint
-from bunq.sdk.model.generated.object_ import Certificate
 from bunq.sdk.security import security
 from tests.bunq_test import BunqSdkTestCase
 
@@ -80,8 +79,10 @@ class TestPsd2Context(BunqSdkTestCase):
             ApiEnvironmentType.SANDBOX,
             security.get_certificate_from_file(cls._get_directory_test_root() + cls._FILE_TEST_CERTIFICATE),
             security.get_private_key_from_file(cls._get_directory_test_root() + cls._FILE_TEST_PRIVATE_KEY),
-            Certificate(
-                security.get_certificate_from_file(cls._get_directory_test_root() + cls._FILE_TEST_CERTIFICATE_CHAIN)),
+            [
+                security.get_certificate_from_file(
+                    cls._get_directory_test_root() + cls._FILE_TEST_CERTIFICATE_CHAIN)
+            ],
             cls._TEST_DEVICE_DESCRIPTION
         )
 

@@ -3,9 +3,9 @@ import socket
 
 import requests
 
+from bunq.sdk.context.api_context import ApiContext, ApiEnvironmentType
 from bunq.sdk.exception.bunq_exception import BunqException
 from bunq.sdk.http.api_client import ApiClient
-from bunq.sdk.context.api_context import ApiContext, ApiEnvironmentType
 from bunq.sdk.model.generated import endpoint
 
 __UNIQUE_REQUEST_ID = "uniqueness-is-required"
@@ -25,11 +25,10 @@ def automatic_sandbox_install():
 
     sandbox_user = __generate_new_sandbox_user()
 
-    return ApiContext(
+    return ApiContext.create(
         ApiEnvironmentType.SANDBOX,
         sandbox_user.api_key,
-        socket.gethostname()
-    )
+        socket.gethostname())
 
 
 def __generate_new_sandbox_user():

@@ -34,29 +34,36 @@ class ApiContext(object):
     # Default path to the file storing serialized API context
     _PATH_API_CONTEXT_DEFAULT = 'bunq.conf'
 
+    # Constants to generate request head string
+    _DELIMITER_NEWLINE = '\n'
+
     def __init__(self,
                  environment_type,
-                 api_key,
-                 device_description,
-                 permitted_ips=None,
+                 api_key=None,
                  proxy_url=None):
-        """
-        :type environment_type: ApiEnvironmentType
-        :type api_key: str
-        :type device_description: str
-        :type permitted_ips: list[str]|None
-        :type proxy_url: str|None
-        """
-
-        if permitted_ips is None:
-            permitted_ips = []
 
         self._environment_type = environment_type
         self._api_key = api_key
+        self._proxy_url = proxy_url
+
         self._installation_context = None
         self._session_context = None
-        self._proxy_url = proxy_url
-        self._initialize(device_description, permitted_ips)
+
+    @classmethod
+    def create(cls,
+               environment_type,
+               api_key,
+               device_description,
+               all_permitted_ip=None,
+               proxy_url=None):
+
+        if all_permitted_ip is None:
+            all_permitted_ip = []
+
+        api_context = ApiContext(environment_type, api_key, proxy_url)
+        cls._initialize(api_context, device_description, all_permitted_ip)
+
+        return api_context
 
     @classmethod
     def create_for_psd2(cls,
@@ -64,26 +71,28 @@ class ApiContext(object):
                         certificate,
                         private_key,
                         all_chain_certificate,
-                        description,
+                        device_description,
                         all_permitted_ip=None):
 
         if all_permitted_ip is None:
             all_permitted_ip = []
 
-        cls._environment_type = environment_type
-        cls._installation_context = None
-        cls._session_context = None
+        api_context = ApiContext(environment_type)
 
-        cls._initialize_installation()
+        cls._initialize_installation(api_context)
 
-        service_provider_credential = cls._initialize_psd2_credential(certificate, private_key, all_chain_certificate)
+        service_provider_credential = cls._initialize_psd2_credential(
+            api_context,
+            certificate,
+            private_key,
+            all_chain_certificate)
 
-        cls._api_key = service_provider_credential.token_value
+        api_context._api_key = service_provider_credential.token_value
 
-        cls._register_device(description, all_permitted_ip)
-        cls._initialize_session()
+        cls._register_device(api_context, device_description, all_permitted_ip)
+        cls._initialize_session(api_context)
 
-        return cls
+        return api_context
 
     def _initialize(self, device_description, permitted_ips):
         """
@@ -123,16 +132,16 @@ class ApiContext(object):
         session_token = self.installation_context.token
         client_key_pair = self.installation_context.private_key_client
 
-        string_to_sign = security.public_key_to_string(client_key_pair.publickey()) + session_token
+        string_to_sign = security.public_key_to_string(client_key_pair.publickey()) + self._DELIMITER_NEWLINE + session_token
         encoded_signature = security.generate_signature(string_to_sign, private_key)
 
         payment_provider_response = PaymentServiceProviderCredentialInternal.create_with_api_context(
-            certificate.certificate,
+            certificate._certificate_field_for_request,
             security.get_certificate_chain_string(all_chain_certificate),
             encoded_signature,
             self)
 
-        return payment_provider_response
+        return payment_provider_response.value
 
     def _register_device(self, device_description,
                          permitted_ips):
